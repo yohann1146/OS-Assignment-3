@@ -5,18 +5,18 @@
 #include <unistd.h>
 #include <time.h>
 
-// Shared Variables
+// shared variables
 int shared_resource = 0;
 int read_count = 0;
 int write_count = 0;
 
-// Semaphores (used instead of mutexes)
-sem_t rmutex;          // Protects read_count
-sem_t wmutex;          // Protects write_count
-sem_t resource_access; // Ensures mutual exclusion for the shared resource
-sem_t read_try;        // Enforces writer priority by blocking readers when a writer is waiting
+// semaphores (in place of mutexes)
+sem_t rmutex;          // for read_count
+sem_t wmutex;          // for write_count
+sem_t resource_access; // semaphore for the exclusion of shared resources
+sem_t read_try;        // blocking readers when a writer is waiting
 
-// Helper function to get random microseconds
+// function to get random microseconds
 int get_random_us(int max_seconds, int max_ms) {
     int max_us = (max_seconds * 1000000) + (max_ms * 1000);
     if (max_us == 0) return 0;
@@ -27,13 +27,13 @@ void* reader(void* arg) {
     int id = *((int*)arg);
     
     while (1) {
-        // --- Entry Section ---
-        sem_wait(&read_try);       // Wait if a writer is waiting/writing
-        sem_wait(&rmutex);         // Lock to update read_count
+        // entry section
+        sem_wait(&read_try);       // if a writer is waiting/writing, wait
+        sem_wait(&rmutex);         // lock to update read_count
         
         read_count++;
         if (read_count == 1) {
-            sem_wait(&resource_access); // First reader locks the resource from writers
+            sem_wait(&resource_access); // first reader locks the resource from writers
         }
         
         sem_post(&rmutex);         // Unlock read_count
