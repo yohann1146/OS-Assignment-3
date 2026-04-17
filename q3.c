@@ -10,13 +10,12 @@ int shared_resource = 0;
 int read_count = 0;
 int write_count = 0;
 
-// semaphores (in place of mutexes)
-sem_t rmutex;          // for read_count
-sem_t wmutex;          // for write_count
-sem_t resource_access; // semaphore for the exclusion of shared resources
-sem_t read_try;        // blocking readers when a writer is waiting
+// semaphores
+sem_t rmutex;
+sem_t wmutex;
+sem_t resource_access;
+sem_t read_try;
 
-// function to get random microseconds
 int get_random_us(int max_seconds, int max_ms) {
     int max_us = (max_seconds * 1000000) + (max_ms * 1000);
     if (max_us == 0) return 0;
@@ -28,7 +27,7 @@ void* reader(void* arg) {
     
     while (1) {
         // entry section
-        sem_wait(&read_try);       // if a writer is waiting/writing, wait
+        sem_wait(&read_try);       //wait
         sem_wait(&rmutex);         // lock to update read_count
         
         read_count++;
@@ -37,11 +36,11 @@ void* reader(void* arg) {
         }
         
         sem_post(&rmutex);         // unlock read_count
-        sem_post(&read_try);       // allow the next reader to try entering
+        sem_post(&read_try); 
 
         //reading
         printf("[Reader %d] Reading resource: %d (Active Readers: %d)\n", id, shared_resource, read_count);
-        usleep(get_random_us(1, 0)); // simulate reading (up to 1 s)
+        usleep(get_random_us(1, 0)); //reading
 
         //exit
         sem_wait(&rmutex);         // lock to update read_count
@@ -86,8 +85,7 @@ void* writer(void* arg) {
         }
         sem_post(&wmutex);         // Unlock write_count
 
-        // --- Remainder Section ---
-        usleep(get_random_us(5, 0)); // Sleep before trying to write again (up to 5 secs)
+        usleep(get_random_us(5, 0));
     }
     return NULL;
 }
@@ -95,7 +93,6 @@ void* writer(void* arg) {
 int main() {
     srand(time(NULL));
 
-    // binary semaphores to 1
     sem_init(&rmutex, 0, 1);
     sem_init(&wmutex, 0, 1);
     sem_init(&resource_access, 0, 1);
@@ -106,19 +103,18 @@ int main() {
     int reader_ids[4];
     int writer_ids[2];
 
-    // 4 reader threads
+    // 4 reader
     for (int i = 0; i < 4; i++) {
         reader_ids[i] = i + 1;
         pthread_create(&readers[i], NULL, reader, &reader_ids[i]);
     }
 
-    // 2 writer threads
+    // 2 writer
     for (int i = 0; i < 2; i++) {
         writer_ids[i] = i + 1;
         pthread_create(&writers[i], NULL, writer, &writer_ids[i]);
     }
 
-    // threads being joined
     for (int i = 0; i < 4; i++) {
         pthread_join(readers[i], NULL);
     }
@@ -126,7 +122,6 @@ int main() {
         pthread_join(writers[i], NULL);
     }
 
-    // close and clean
     sem_destroy(&rmutex);
     sem_destroy(&wmutex);
     sem_destroy(&resource_access);
