@@ -35,11 +35,11 @@ static Rover rovers[NUM_ROVERS];
 /*  Returns 1 if rover died during sleep, else 0       */
 static int sleep_drain(Rover *r, double seconds, double rate_per_sec)
 {
-    /* simulate in 0.1-second ticks for accuracy */
-    int ticks = (int)(seconds * 10);
+    /* simulate in 1-second ticks */
+    int ticks = (int)(seconds);
     for (int i = 0; i < ticks; i++) {
-        usleep(100000);   /* 0.1 s */
-        r->battery -= rate_per_sec * 0.1;
+        usleep(1000000);   /* 1 s */
+        r->battery -= rate_per_sec * 1.0;
         if (r->battery <= BATTERY_DEAD) {
             r->battery = BATTERY_DEAD;
             return 1;   /* dead */
@@ -86,7 +86,7 @@ static void acquire_cables(Rover *r)
 
         /* Drain battery while waiting */
         pthread_mutex_unlock(&hub_mutex);
-        r->battery -= BATTERY_DRAIN_WAIT * 0.1;
+        r->battery -= BATTERY_DRAIN_WAIT * 1.0;
         if (r->battery <= BATTERY_DEAD) {
             r->battery  = BATTERY_DEAD;
             r->stranded = 1;
@@ -95,7 +95,7 @@ static void acquire_cables(Rover *r)
             pthread_cond_broadcast(&hub_cond);
             pthread_exit(NULL);
         }
-        usleep(100000);   /* 0.1 s tick */
+        usleep(1000000);   /* 1 s tick */
 
         pthread_mutex_lock(&hub_mutex);
 
